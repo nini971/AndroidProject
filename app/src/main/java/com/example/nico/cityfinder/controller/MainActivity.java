@@ -1,6 +1,7 @@
 package com.example.nico.cityfinder.controller;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -30,7 +31,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     //      ATTRIBUT
     //------------------
 
-    private final String listForbiden[] = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", ",", ":", "!", "?", ";", ")", "(", "+", "/", "*", "_"};
     private EditText etUrl;
     private Button btFindCity;
     private TextView tvNbcity;
@@ -113,9 +113,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public void onCityClick(Result city) {
         if (city != null) {
-            Intent intent = new Intent(this, CityMapActivity.class);
-            intent.putExtra("city", city);
-            startActivity(intent);
+
+            Uri gmmIntentUri = Uri.parse("geo:0,0?q=" + city.getVille() + "+" + city.getCp());
+            Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
+            mapIntent.setPackage("com.google.android.apps.maps");
+            startActivity(mapIntent);
+
+//            Intent intent = new Intent(android.content.Intent.ACTION_VIEW,
+//                    Uri.parse("http://maps.google.com/maps?saddr=Toulouse"));
+//            startActivity(intent);
+
+//            Intent intent = new Intent(this, CityMapActivity.class);
+//            intent.putExtra("city", city);
+//            startActivity(intent);
         }
     }
 
@@ -130,5 +140,23 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         } else {
             Toast.makeText(this, "Erreur de chargement !", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putParcelableArrayList("listCity", listCity);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        ArrayList<Result> temp = savedInstanceState.getParcelableArrayList("listCity");
+        listCity.clear();
+        if (temp != null) {
+            listCity.addAll(temp);
+            cityAdapter.notifyDataSetChanged();
+        }
+
     }
 }
