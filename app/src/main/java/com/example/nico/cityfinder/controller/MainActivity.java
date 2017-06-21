@@ -8,8 +8,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
-import android.util.Pair;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -18,13 +16,15 @@ import android.widget.Toast;
 
 import com.example.nico.cityfinder.R;
 import com.example.nico.cityfinder.model.ControllerUtils;
+import com.example.nico.cityfinder.model.OnGetCityRequest;
 import com.example.nico.cityfinder.model.RequestCityAT;
 import com.example.nico.cityfinder.model.Result;
+import com.example.nico.cityfinder.model.beans.TechnicalException;
 import com.example.nico.cityfinder.view.CityAdapter;
 
 import java.util.ArrayList;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener, CityAdapter.OnCityListener, RequestCityAT.OnGetCityRequest {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener, CityAdapter.OnCityListener, OnGetCityRequest {
 
 
     //------------------
@@ -38,6 +38,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private CityAdapter cityAdapter;
     private RecyclerView recyclerView;
     private RequestCityAT requestCityAT = null;
+
 
     //------------------
     //      METHODE
@@ -58,40 +59,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public void onClick(View v) {
         if (v == btFindCity) {
-            // Handle clicks for btFindCity
-
             String text = etUrl.getText().toString();
-            Log.w("Tag_info", " text = " + text);
 
             // TEST DE LA CHAINE DE CARACTERE
-            Pair<ControllerUtils.Control, RequestCityAT.Type> result = ControllerUtils.controllRequestCity(text);
+            RequestCityAT.Type result = ControllerUtils.sendRequestCity(text, this);
 
-            // CHAINE VALIDER
-            if (result.first == ControllerUtils.Control.VALID) {
-
-                // CHAINE EST UN STRING
-                if (result.second == RequestCityAT.Type.NAME) {
-                    if (requestCityAT == null || requestCityAT.getStatus() == AsyncTask.Status.FINISHED) {
-                        requestCityAT = new RequestCityAT(RequestCityAT.Type.NAME, text, this);
-                        requestCityAT.execute();
-                    }
-
-                    // CHAINE EST UN NOMBRE
-                } else if (result.second == RequestCityAT.Type.CP) {
-
-                    if (requestCityAT == null || requestCityAT.getStatus() == AsyncTask.Status.FINISHED) {
-                        requestCityAT = new RequestCityAT(RequestCityAT.Type.CP, text, this);
-                        requestCityAT.execute();
-                    }
+            // EXECUTE ASYNTASK
+            if (result != null) {
+                if (requestCityAT == null || requestCityAT.getStatus() == AsyncTask.Status.FINISHED) {
+                    requestCityAT = new RequestCityAT(result, text, this);
+                    requestCityAT.execute();
                 }
-
-                // CHAINE INVALIDE
-            } else if (result.first == ControllerUtils.Control.WRONG) {
-                Toast.makeText(this, "Il y a un caractère incorrect.", Toast.LENGTH_SHORT).show();
-
-                // CHAINE EMPTY
-            } else if (result.first == ControllerUtils.Control.EMPTY) {
-                Toast.makeText(this, "Le champ 'ville' est vide.", Toast.LENGTH_SHORT).show();
             }
 
         }
@@ -141,6 +119,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             Toast.makeText(this, "Erreur de chargement !", Toast.LENGTH_SHORT).show();
         }
     }
+
+    @Override
+    public void onRequestError(TechnicalException e) {
+        Toast.makeText(this, e.getUserMessage(), Toast.LENGTH_SHORT).show();
+    }
+
 
     @Override
     public void onSaveInstanceState(Bundle outState) {

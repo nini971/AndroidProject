@@ -3,6 +3,8 @@ package com.example.nico.cityfinder.model;
 import android.os.AsyncTask;
 import android.util.Log;
 
+import com.example.nico.cityfinder.model.beans.TechnicalException;
+
 import java.util.ArrayList;
 
 /**
@@ -20,6 +22,7 @@ public class RequestCityAT extends AsyncTask {
     private Type type;
     private String requestCity;
     private OnGetCityRequest onGetCityRequest;
+    private Exception e;
 
     //------------------
     //  CONSTRUCTOR
@@ -42,6 +45,7 @@ public class RequestCityAT extends AsyncTask {
             try {
                 listCity = WebServiceUtils.getCityByName(requestCity);
             } catch (Exception e) {
+                this.e = e;
                 e.printStackTrace();
             }
         } else if (type == Type.CP && requestCity != null) {
@@ -57,18 +61,14 @@ public class RequestCityAT extends AsyncTask {
     @Override
     protected void onPostExecute(Object o) {
         super.onPostExecute(o);
-        ArrayList<Result> temp = (ArrayList<Result>) o;
-        Log.w("Tag", "taille list : " + temp.size());
-        onGetCityRequest.onRequestEnd(temp);
+        if (e != null) {
+            onGetCityRequest.onRequestError(new TechnicalException(e, "Une erreur est survenue"));
+        } else {
+            ArrayList<Result> temp = (ArrayList<Result>) o;
+            Log.w("Tag", "taille list : " + temp.size());
+            onGetCityRequest.onRequestEnd(temp);
+        }
+
 
     }
-
-    //------------------
-    //  INTERFACE
-    //------------------
-
-    public interface OnGetCityRequest {
-        void onRequestEnd(ArrayList<Result> listCity);
-    }
-
 }
